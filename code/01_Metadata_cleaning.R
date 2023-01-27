@@ -4,7 +4,7 @@
 #       There is an easier way to get metadata from NCBI using rentrez 
 #       (see the file biosample_extraction.R)
 #       Rentrez produces an XML, which is hard to clean. This script cleans the text file.
-# Last updated: 12/27/2022
+# Last updated: 1/27/2023
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~
@@ -19,14 +19,14 @@ library(zoo) #for na.locf function
 library(janitor) #cleaning column names
 library(lubridate) #cleaning date values
 library(linelist) #please let this clean the dates
-library(ggplot2) #data exploration/visualization
 
 setwd("C:/Users/marye/OneDrive/Desktop/Thesis/Data")
-wd <- "C:/Users/marye/OneDrive/Desktop/Thesis"
+wd <- "C:/Users/marye/OneDrive/Desktop/Thesis/"
 
 #Read data
 biosample <- read.table(paste0(wd,"Data/biosample_search_result_full.txt"),
                         header = F, sep = "\t")
+
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~
 # Managing text file ####
@@ -145,7 +145,7 @@ bio6$source_type[bio6$source_type == 'c("food", "food")'] <- "food"
 table(bio6$source_type, bio6$after2000)
 
 
-write.csv(bio6, "cleaned-metadata.csv", row.names = F)
+write.csv(bio6, "intermediate metadata/cleaned-metadata1.csv", row.names = F)
 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -153,8 +153,9 @@ write.csv(bio6, "cleaned-metadata.csv", row.names = F)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list=ls())
+wd <- "C:/Users/marye/OneDrive/Desktop/Thesis/"
 
-bio6 <- read.csv("cleaned-metadata.csv")
+bio6 <- read.csv(paste0(wd,"Data/intermediate metadata/cleaned-metadata1.csv"))
 table(bio6$isolation_source[bio6$source_type == "animal"])
 table(bio6$isolation_source[bio6$source_type == "environmental"])
 table(bio6$isolation_source[bio6$source_type == "food"])
@@ -167,12 +168,12 @@ table(bio6$source_type)
 bio6$source_type[grepl("Animal", bio6$isolation_source)] <- "animal" #uppercase
 bio6$source_type[grepl("animal", bio6$isolation_source)] <- "animal" #lowercase
 
-#If isolation source includes specific animal, set source type "animal" 
+# If isolation source includes specific animal, set source type "animal" 
 bio6$source_type[grepl("Cow", bio6$isolation_source)] <- "animal" #cow
 bio6$source_type[grepl("Canis", bio6$isolation_source)] <- "animal" #canine
 bio6$source_type[grepl("Canine", bio6$isolation_source)] <- "animal" #canine
 
-#wild animals?
+# potentially wild animals
 bio6$source_type[grepl("ape", bio6$isolation_source)] <- "wild animal"
 bio6$source_type[grepl("lion", bio6$isolation_source)] <- "wild animal"
 bio6$source_type[grepl("gorilla", bio6$isolation_source)] <- "wild animal"
@@ -182,12 +183,12 @@ bio6$source_type[grepl("marmoset", bio6$isolation_source)] <- "wild animal"
 bio6$source_type[grepl("elephant", bio6$isolation_source)] <- "wild animal"
 bio6$source_type[grepl("giraffe", bio6$isolation_source)] <- "wild animal"
 
-#wtf is a cloacae?
+# categorizing cloacae source
 miss_cloacae <- bio6 %>% filter(grepl("cloacae", bio6$isolation_source))
 bio6$source_type[grepl("cloacae", bio6$isolation_source)] <- "wild animal" #duck cloacae
 
 
-#Patient -> human
+# all patients should be categorized as human
 #filter rows with "patient"
 miss_patient <- bio6 %>% filter(grepl("patient", bio6$isolation_source)) 
 #all patients are Homo sapiens
@@ -195,7 +196,7 @@ table(miss_patient$host)
 bio6$source_type[grepl("patient", bio6$isolation_source)] <- "human"
 
 
-#Beef -> food
+# beef categorized as food
 bio6$source_type[grepl("beef", bio6$isolation_source)] <- "food"
 bio6$source_type[grepl("Beef", bio6$isolation_source)] <- "food"
 
@@ -236,7 +237,7 @@ miss <- bio6 %>% filter(source_type == "Unknown")
 # nothing I can see to do about these last 5
 
 
-write.csv(bio6, "cleaned-metadata2.csv", row.names = F)
+write.csv(bio6, "intermediate metadata/cleaned-metadata2.csv", row.names = F)
 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -244,12 +245,14 @@ write.csv(bio6, "cleaned-metadata2.csv", row.names = F)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list=ls())
+wd <- "C:/Users/marye/OneDrive/Desktop/Thesis/"
 
 #Read in csv, converting na_strings to NA
-bio6 <- read.csv("cleaned-metadata2.csv", na.strings = c("NULL", "null", "missing",
-                                                         "Missing", "unknown", "Unknown",
-                                                         "Not collected", "not applicable",
-                                                         "Not applicable", "not collected"))
+bio6 <- read.csv(paste0(wd,"Data/intermediate metadata/cleaned-metadata2.csv"), 
+                 na.strings = c("NULL", "null", "missing",
+                                "Missing", "unknown", "Unknown",
+                                "Not collected", "not applicable",
+                                "Not applicable", "not collected"))
 
 colSums(is.na(bio6))
 table(bio6$source_type)
@@ -297,7 +300,7 @@ names(bio7)
 table(bio7$source_type)
 
 
-write.csv(bio7, "cleaned-metadata3.csv", row.names = F)
+write.csv(bio7, "intermediate metadata/cleaned-metadata3.csv", row.names = F)
 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -305,13 +308,13 @@ write.csv(bio7, "cleaned-metadata3.csv", row.names = F)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list=ls())
-bio8 <- read.csv("cleaned-metadata3.csv")
+wd <- "C:/Users/marye/OneDrive/Desktop/Thesis/"
+
+bio8 <- read.csv(paste0(wd,"Data/intermediate metadata/cleaned-metadata3.csv"))
 
 animal <- bio8 %>% filter(source_type == "animal" | source_type == "wild animal")
 
 table(bio8$source_type, useNA = "always")
-
-write.csv(animal, "animal_test2.csv", row.names = F)
 
 # Convert some animal to wild animal
 bio8$source_type[grepl("Odocoileus virginianus leucurus", bio8$host)] <- "wild animal" #deer
@@ -336,7 +339,7 @@ bio8$host[bio8$host == "Odocoileus virginianus leucurus"] <-
 bio8$host[bio8$host == "Gallus gallus domesticus"] <- 
   "Gallus gallus domesticus (chicken)"
 
-
+# Combine isolation source and host information into one useful variable
 bio9 <- transform(bio8, 
                   isolation_notes = ifelse(is.na(isolation_source) | is.na(host), 
                                               coalesce(isolation_source, host), 
@@ -359,7 +362,6 @@ bio9$isolation_notes[bio9$isolation_notes == "mink intestine mink mustelidae"] <
 bio9$isolation_notes[bio9$isolation_notes == "Giraffa camelopardalis (giraffe) giraffa camelopardalis"] <- 
   "Giraffa camelopardalis (giraffe)"
 
-write.csv(bio9, "cleaned-metadata4.csv", row.names = F)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~
 # Reordering columns ####
@@ -394,31 +396,20 @@ table(bio10$serotype2, useNA = "always")
 bio10$source_type[bio10$isolation_source == "cheddar cheese"] <- NA
 bio10$isolation_notes[bio10$isolation_source == "cheddar cheese"] <- NA
 
-write.csv(bio10, "cleaned-metadata5.csv", row.names = F)
+#Create full source type variable with animal/wild animal as different categories
+bio10$source_type_full <- bio10$source_type
+
+#Categorize animal/wild animal together in source_type variable
+bio10$source_type[bio10$source_type == "wild animal"] <- "animal"
+
+
+##~~~~~~~~~~~~~~~~~~~~~~~~
+# Write finished data ####
+##~~~~~~~~~~~~~~~~~~~~~~~~
+
+write.csv(bio10, "intermediate metadata/cleaned-metadata4.csv", row.names = F)
+write.csv(bio10, "cleaned-metadata-final.csv", row.names = F)
 
 table(bio10$source_type, useNA = "always")
 
 
-
-##~~~~~~~~~~~~~~~~~~~~~~~
-# Some exploration ####
-##~~~~~~~~~~~~~~~~~~~~~~~
-
-rm(list=ls())
-bio10 <- read.csv("cleaned-metadata5.csv")
-
-#isolates by year
-plot1 <- ggplot(bio10, aes(x = collection_year)) + geom_histogram(bins = 30) +
-  labs(title = "Number of Isolates Collected by Year", x = "Collection Year",
-       y = "Number of Isolates") + theme(text = element_text(size = 20))
-plot1
-
-#isolates by year and source type
-plot2 <- ggplot(bio10, 
-                aes(x = collection_year, fill = source_type)) + 
-  geom_histogram(bins = 30) + xlim(1983, 2022) +
-  labs(title = "Number of Isolates Collected by Year", x = "Collection Year",
-       y = "Number of Isolates") + theme(text = element_text(size = 20))
-plot2
-
-table(bio10$isolation_notes)
